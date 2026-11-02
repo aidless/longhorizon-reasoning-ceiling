@@ -5,6 +5,9 @@ description = "Long-Horizon Reasoning evaluation toolchain — engineering-grade
 requires-python = ">=3.10"
 dependencies = []
 
+[project.optional-dependencies]
+viz = ["matplotlib>=3.5"]
+
 [project.scripts]
 lhr-tools = "lhr_tools.cli:main"
 
