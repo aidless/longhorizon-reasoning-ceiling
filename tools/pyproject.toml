@@ -1,0 +1,20 @@
+[project]
+name = "lhr-tools"
+version = "0.5.1"
+description = "Long-Horizon Reasoning evaluation toolchain — engineering-grade architecture"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+lhr-tools = "lhr_tools.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["lhr_tools*"]
+
+[tool.setuptools.package-data]
+lhr_tools = ["config/*.yaml", "schemas/*.json"]

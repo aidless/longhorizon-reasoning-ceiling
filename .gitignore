@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Data / artifacts
+data/
+!tools/tests/data/
+tools/tests/data/*
+!tools/tests/data/*.jsonl
+models/
+*.bak*
+*.png
+*.svg
+
+# OS
+.DS_Store
