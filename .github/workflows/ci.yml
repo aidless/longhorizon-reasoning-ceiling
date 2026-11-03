@@ -41,6 +41,9 @@ jobs:
       - name: Run CLI tests
         run: python3 tests/test_cli.py
 
+      - name: Run config tests
+        run: python3 tests/test_config.py
+
       - name: Run self-tests
         run: python3 -m lhr_tools.cli selftest
 

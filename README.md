@@ -15,7 +15,7 @@ longhorizon-reasoning-ceiling/
 │   │   ├── io/               # 数据：generate / importer / jsonl / schema
 │   │   ├── services/         # 服务：pipeline / reporter / visualize / compare / config
 │   │   └── cli.py            # CLI 入口（13 命令）
-│   ├── tests/                # 测试（66/66 通过）
+│   ├── tests/                # 测试（69/69 通过）
 │   ├── docs/API.md           # API 参考
 │   └── README.md             # 工具链使用说明
 ├── experiments/              # 实验设计（E1-E3）
@@ -27,12 +27,17 @@ longhorizon-reasoning-ceiling/
 ```bash
 cd tools
 pip install -e .
+mkdir -p data                                    # dataset 的 --output 不会自动建目录
 lhr-tools --help
 lhr-tools dataset anchor --n 10 --seed 42 --output data/anchor.jsonl
 lhr-tools saturation --px 0.3 --fmax 0.95 --eps 0.01
-lhr-tools verifier --input data/verifier.jsonl
-lhr-tools report --output ../analyses/lhr-report.md
+lhr-tools dataset verifier --n 10 --seed 42 --output data/verifier.jsonl
+lhr-tools verifier data/verifier.jsonl          # verifier 收位置参数，不接受 --input
+lhr-tools anchor data/anchor.jsonl > data/anchor.json
+lhr-tools report data/anchor.json --output ../analyses/lhr-report.md   # report 收位置参数（一个或多个结果 JSON）
 ```
+
+两处容易踩坑的写法：`verifier` 和 `report` 的输入文件都是**位置参数**（`report` 可接多个结果 JSON）；`dataset --output` 指向的目录必须先存在，否则报 `FileNotFoundError`。
 
 ## 指标概览
 
@@ -49,7 +54,7 @@ lhr-tools report --output ../analyses/lhr-report.md
 
 ```bash
 cd tools
-python3 -m pytest tests/ -q   # 全套件 66/66
+python3 -m pytest tests/ -q   # 全套件 69/69
 lhr-tools selftest            # 模块自检（RED→GREEN）
 ```
 

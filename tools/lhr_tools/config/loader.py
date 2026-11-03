@@ -1,7 +1,7 @@
 """Configuration loading.
 
 Loads YAML/JSON config with defaults and environment-variable overrides.
-Falls back to JSON if PyYAML is unavailable.
+YAML files require PyYAML; JSON files are parsed with the stdlib.
 """
 
 from __future__ import annotations
@@ -22,16 +22,17 @@ DEFAULTS: dict[str, Any] = {
 
 
 def _load_yaml_or_json(path: Path) -> dict[str, Any]:
-    """Load a config file (YAML preferred, JSON fallback)."""
+    """Load a config file (YAML or JSON, chosen by file suffix)."""
     text = path.read_text(encoding="utf-8")
     if path.suffix in (".yaml", ".yml"):
         try:
             import yaml  # type: ignore
-
-            return yaml.safe_load(text) or {}
-        except ImportError:
-            # Fallback: treat YAML as JSON (works for JSON-compatible YAML).
-            return json.loads(text) or {}
+        except ImportError as exc:
+            raise RuntimeError(
+                f"读取 YAML 配置 {path} 需要 PyYAML："
+                "请先安装 pyyaml（pip install 'pyyaml>=6.0'）。"
+            ) from exc
+        return yaml.safe_load(text) or {}
     return json.loads(text) or {}
 
 
