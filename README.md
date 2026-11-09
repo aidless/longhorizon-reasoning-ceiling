@@ -2,6 +2,8 @@
 
 [![CI](https://github.com/aidless/longhorizon-reasoning-ceiling/actions/workflows/ci.yml/badge.svg)](https://github.com/aidless/longhorizon-reasoning-ceiling/actions/workflows/ci.yml)
 
+> **English TL;DR**: An engineering toolchain for measuring the long-horizon reasoning ceiling: anchor rate, saturation points, credit assignment, verifier robustness, trajectory diagnostics, and calibration metrics, each mapped to cited literature. Install the `lhr-tools` Python package with `pip install -e .` and drive it through a 13-command CLI (`lhr-tools --help`). An independent-researcher project with no institutional affiliation, it aims for reproducible, zero-dependency, verifiable evaluation rather than a paper claim.
+
 评估长程推理能力天花板（long-horizon reasoning ceiling）的工程级工具链：锚定率、饱和点、credit assignment、验证器鲁棒性、轨迹级诊断与校准指标。
 
 > 独立研究者项目，无机构隶属。目标从论文转向工程架构：提供可复现、零依赖、可校验的评估工具。
