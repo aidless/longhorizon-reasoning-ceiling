@@ -76,7 +76,7 @@ def test_generate_realistic_verifier_range():
     rows = generate_realistic("verifier", n=500, seed=42)
     assert len(rows) == 500
     exploit_rate = sum(1 for r in rows if r["is_exploit"]) / len(rows)
-    assert 0.0 <= exploit_rate <= 0.15  # RHB 2605.02964: 0%–13.9%
+    assert 0.0 <= exploit_rate <= 0.15  # generator range in io/generate.py, not a paper replay
 
 
 def test_generate_realistic_credit_accuracy():

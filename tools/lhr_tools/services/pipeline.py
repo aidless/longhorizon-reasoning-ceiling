@@ -4,11 +4,12 @@ Loads config → reads data → validates schema → dispatches to a metric
 function → returns a structured result dict. This is the service layer:
 it wires the other layers together without being a CLI itself.
 
-Note: `saturation` is the one metric that is *parameter-driven*, not
-data-driven — it derives N* from p_x/f_max/eps rather than from a JSONL
-file. `_run_saturation` therefore raises ValueError to signal callers
-should go through `lhr_tools.cli._cmd_saturation` directly. All other
-metrics (anchor/credit/verifier) are data-driven.
+Note: `saturation` is parameter-driven. It derives a local N* from
+p_x/f_max/eps rather than from a JSONL file, and that expression is not
+TTSPM Eq. (14). `_run_saturation` raises ValueError so callers use
+`lhr_tools.cli._cmd_saturation`. anchor, credit, and verifier are the
+data-driven metrics this pipeline dispatches. trajectory and calibration
+are computed from JSONL in the CLI, not here.
 """
 
 from __future__ import annotations

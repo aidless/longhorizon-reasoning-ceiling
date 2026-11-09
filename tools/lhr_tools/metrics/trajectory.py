@@ -1,23 +1,13 @@
-"""Trajectory-level diagnostics (v0.5, C1).
+"""Trajectory-level diagnostics (local definitions).
 
-Implements the long-horizon / error-anchoring dimensions surfaced by the
-direction-3 literature sweep (17 papers, all arXiv-verified):
+Pure functions of 0/1 sequences: error rate, ``p**L``, fraction of
+sequences that never recover after the first 1, positional weights, a
+late-stage index, the first mismatch index, and mean normalized
+Levenshtein distance between consecutive sequences.
 
-- per_step_reliability    — per-step reliability p (geometric law,
-                            arXiv:2609.01660 "How Fast Do Agents Rot?")
-- snowball_rate           — probability that a first error cascades to
-                            whole-chain failure (arXiv:2607.16727 CART,
-                            MLLM observed 0.65)
-- positional_impact       — per-step error harm weight curve
-                            (arXiv:2508.05282 "Late-Stage Fragility")
-- error_origin_detection  — locate where the trajectory first diverges
-                            from the correct path (arXiv:2604.14528)
-- context_drag            — tree-edit-distance measure of how strongly a
-                            failed attempt's structure is inherited by the
-                            next trajectory (arXiv:2602.04288 "Contextual
-                            Drag")
-
-All functions are pure (no IO), deterministic, and edge-safe.
+ArXiv ids elsewhere in this file were not re-checked in the honesty
+pass. ``context_drag`` is Levenshtein distance, not a tree edit, and the
+value rises when consecutive sequences differ. See FAILURE_MODES.md.
 """
 
 from __future__ import annotations
@@ -60,9 +50,8 @@ def per_step_reliability(steps: Sequence[int], horizon: int | None = None) -> fl
 def geometric_ceiling(p: float, max_steps: int = 1000) -> float:
     """Probability of a fully clean trajectory of length L under p.
 
-    Under the geometric law, a trajectory of length L stays clean with
-    probability p**L. As L grows this decays to 0 — the analytic form of
-    the long-horizon ceiling (arXiv:2609.01660).
+    Local definition: ``p ** max_steps``. The arXiv id previously cited
+    here was not re-checked. See FAILURE_MODES.md.
 
     Parameters
     ----------
@@ -282,14 +271,10 @@ def _edit_distance(a: Sequence[int], b: Sequence[int]) -> int:
 
 
 def context_drag(trajectories: Sequence[Sequence[int]]) -> float:
-    """Mean tree-edit-distance between consecutive trajectories.
+    """Mean normalized Levenshtein distance between consecutive sequences.
 
-    A high value means consecutive trajectories inherit each other's
-    structure weakly (low contextual drag); a low value means strong
-    structural inheritance (high contextual drag).
-
-    Returns the mean normalized edit distance (0 = identical structure,
-    1 = completely different).
+    0 means identical sequences. The value rises toward 1 as they differ.
+    This is not a tree-edit distance and not a drag coefficient.
 
     Parameters
     ----------

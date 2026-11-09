@@ -1,5 +1,7 @@
 # v0.4 独立审查报告（2026-11-01）
 
+> Historical note. The 42/42 and 47/47 totals are this review's snapshot, not the current suite. Current claims are in the root README.
+
 审查对象：`longhorizon-reasoning-ceiling/tools`（v0.4，A+B 扩展后）
 审查范围：全部 22 个 .py（2266 行），重点 A1-A4 / B5-B6 新增代码
 基线：全套件 42/42 RED→GREEN（metrics 15 + io 11 + cli 16）

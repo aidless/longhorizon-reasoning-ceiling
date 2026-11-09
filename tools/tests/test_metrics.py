@@ -5,6 +5,7 @@ Run: python3 tests/test_metrics.py
 
 from __future__ import annotations
 
+import math
 import sys
 from pathlib import Path
 
@@ -12,7 +13,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from lhr_tools.metrics.anchor import Trajectory, anchor_rate, _is_anchored
 from lhr_tools.metrics.saturation import SaturationParams, saturation_point, pass_at_k, bootstrap_nstar_ci
-from lhr_tools.metrics.credit import StepCredit, cohens_kappa, credit_precision
+from lhr_tools.metrics.credit import (
+    StepCredit, cohens_kappa, credit_precision, weakest_link_dominance,
+)
 from lhr_tools.metrics.verifier import Verdict, false_accept_rate, false_reject_rate, auc_roc, auprc
 from lhr_tools.metrics.trajectory import (
     per_step_reliability, geometric_ceiling, snowball_rate,
@@ -74,6 +77,17 @@ def test_saturation_green():
     assert pass_at_k(0.3, 1) < pass_at_k(0.3, 4) < pass_at_k(0.3, 16)
 
 
+def test_saturation_local_expression_not_ttspm_eq14():
+    """Local N* is not TTSPM Eq. (14). See FAILURE_MODES.md."""
+    p, f, eps = 0.3, 0.9, 0.01
+    local = math.ceil(math.log(eps * p / f) / math.log(1.0 - p))
+    paper = math.ceil(math.log(eps / (f * p)) / math.log(1.0 - p))
+    assert local == 16
+    assert paper == 10
+    assert local != paper
+    assert saturation_point(SaturationParams(p, f, eps)) == local
+
+
 def test_saturation_bootstrap_ci():
     """A1: bootstrap CI is finite, ordered, brackets the point estimate,
     and is deterministic for a fixed seed."""
@@ -110,6 +124,15 @@ def test_saturation_bootstrap_high_skip_index():
 def test_credit_red():
     bad = [StepCredit("positive", "negative") for _ in range(10)]
     assert cohens_kappa(bad) < 0.5
+
+
+def test_weakest_link_dominance_is_one_on_nonempty():
+    """Match-bit min equals the all-match bit, so the score is always 1."""
+    perfect = [StepCredit("positive", "positive"), StepCredit("negative", "negative")]
+    mixed = [StepCredit("positive", "positive"), StepCredit("negative", "positive")]
+    assert weakest_link_dominance(perfect) == 1.0
+    assert weakest_link_dominance(mixed) == 1.0
+    assert weakest_link_dominance([]) == 0.0
 
 
 def test_credit_green():

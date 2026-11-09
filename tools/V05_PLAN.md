@@ -1,5 +1,7 @@
 # v0.5 扩展计划
 
+> Historical note, not a current claim. Counts and "全部 arXiv 验号通过" were not re-checked in the honesty pass. Current claims are in the root README. Citation gaps are in `FAILURE_MODES.md`.
+
 ## 背景
 
 用户 m01235「再找找论文 看看还有什么可以进化的吗 先把项目做大 再求精简」。

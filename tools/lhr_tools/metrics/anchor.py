@@ -1,9 +1,11 @@
-"""Anchor-rate measurement (E1).
+"""Anchor-rate measurement (local rule).
 
-Defines the early-error anchoring rate per FALCA (arXiv:2610.28361):
-a trajectory is "anchored" when the model locks onto an incorrect
-candidate early (within the first 20% of steps) and stays in its
-neighbourhood without exploring new regions.
+A trajectory counts as anchored when an incorrect state appears in the
+first ``anchor_fraction`` of steps (default 0.20) and every later step
+stays within ``neighbourhood_radius`` of that state.
+
+FALCA (arXiv:2610.28361) discusses anchoring on an incorrect candidate.
+It does not define this predicate. See FAILURE_MODES.md.
 """
 
 from __future__ import annotations
@@ -51,7 +53,7 @@ class Trajectory:
 
 
 def _is_anchored(traj: Trajectory) -> bool:
-    """FALCA anchoring test on a single trajectory.
+    """Local anchoring test on a single trajectory.
 
     The model anchors early if:
       1. within the first `anchor_fraction` of steps it commits to an

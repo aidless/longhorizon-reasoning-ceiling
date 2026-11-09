@@ -1,13 +1,17 @@
-"""Saturation-point estimation (E1).
+"""Saturation-point estimation (local expression).
 
-Implements TTSPM (arXiv:2505.20522) Eq. (14) saturation point:
+``saturation_point`` evaluates
 
-    N* = ceil( ln(eps * p_x / F_max) / ln(1 - p_x) )
+    N* = max(1, ceil( ln(eps * p_x / F_max) / ln(1 - p_x) ))
 
-where p_x is the per-attempt success probability, F_max the asymptotic
-performance, and eps the marginal-return threshold.
+TTSPM (arXiv:2505.20522) Eq. (14) is a different expression:
 
-Added in v0.4: bootstrap confidence interval for N* (A1).
+    N* = ceil( ln(eps / (F_max * p_x)) / ln(1 - p_x) )
+
+with precondition eps < F_max * p_x. This module does not implement
+that equation. See FAILURE_MODES.md.
+
+``bootstrap_nstar_ci`` resamples this local N*, not Eq. (14).
 """
 
 from __future__ import annotations
@@ -25,8 +29,10 @@ class SaturationParams:
 
 
 def saturation_point(params: SaturationParams) -> int:
-    """TTSPM Eq. (14): the attempt count beyond which extra compute
-    yields diminishing returns."""
+    """Local N* from ``ln(eps * p_x / F_max) / ln(1 - p_x)``.
+
+    Not TTSPM Eq. (14). See the module docstring and FAILURE_MODES.md.
+    """
     p = params.p_x
     f = params.f_max
     eps = params.eps
@@ -147,8 +153,9 @@ def bootstrap_nstar_ci(
 
 
 # ---------------------------------------------------------------------
-# C5: scaling-law exponent + geometric ceiling (arXiv:2610.30765 GenRM,
-#     arXiv:2609.01660 "How Fast Do Agents Rot?")
+# Local scaling helpers. ArXiv ids previously named here were not
+# re-checked; do not read them as a statement that these functions
+# reproduce a paper. See FAILURE_MODES.md.
 # ---------------------------------------------------------------------
 def scaling_law_exponent(p_x: float, k: int) -> float:
     """Exponent of the compute-scaling law at attempt count k.
@@ -190,12 +197,10 @@ def scaling_law_exponent(p_x: float, k: int) -> float:
 
 
 def geometric_ceiling(p_x: float, max_steps: int) -> float:
-    """Probability a chain stays clean through max_steps under p_x.
+    """Local ``p_x ** max_steps``.
 
-    Under the geometric reliability law (arXiv:2609.01660), the ceiling
-    for a chain of length L is p_x**L. This is the "how long can we go
-    without an error" curve: it decays exponentially as L grows, which is
-    the mathematical form of the long-horizon ceiling.
+    The arXiv id previously cited here was not re-checked. This is not
+    a measured ceiling. See FAILURE_MODES.md.
 
     Parameters
     ----------

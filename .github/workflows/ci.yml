@@ -4,10 +4,14 @@ on:
   push:
     paths:
       - "tools/**"
+      - "README.md"
+      - "FAILURE_MODES.md"
       - ".github/workflows/ci.yml"
   pull_request:
     paths:
       - "tools/**"
+      - "README.md"
+      - "FAILURE_MODES.md"
       - ".github/workflows/ci.yml"
 
 jobs:
@@ -29,27 +33,21 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install package
-        run: pip install -e ".[viz]"
+      - name: Install package with test extras
+        run: pip install -e ".[dev,viz]"
 
-      - name: Run metrics tests
-        run: python3 tests/test_metrics.py
-
-      - name: Run IO tests
-        run: python3 tests/test_io.py
-
-      - name: Run CLI tests
-        run: python3 tests/test_cli.py
-
-      - name: Run config tests
-        run: python3 tests/test_config.py
+      - name: Pytest
+        run: python -m pytest tests/ -q
 
       - name: Run self-tests
-        run: python3 -m lhr_tools.cli selftest
+        run: python -m lhr_tools.cli selftest
 
-      - name: Verify CLI entry point
+      - name: Fixture CLI smoke
         run: |
           lhr-tools --help >/dev/null
           lhr-tools config --show >/dev/null
-          lhr-tools saturation --px 0.5 --fmax 0.9 >/dev/null
-          echo "CLI entry point OK"
+          lhr-tools saturation --px 0.3 --fmax 0.9 --eps 0.01 >/dev/null
+          lhr-tools anchor tests/data/anchor.jsonl >/dev/null
+          lhr-tools credit tests/data/credit.jsonl >/dev/null
+          lhr-tools verifier tests/data/verifier.jsonl >/dev/null
+          echo "fixture CLI OK"

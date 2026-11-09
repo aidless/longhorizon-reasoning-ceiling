@@ -1,6 +1,8 @@
-# lhr_tools API Reference (v0.5.1)
+# lhr_tools API Reference (package version 0.5.1)
 
-本文件列出 `lhr_tools` 各模块的公开函数签名、参数与返回结构。所有函数均为纯 Python 标准库实现（无第三方依赖）。
+本文件列出公开函数的签名。测量函数是本地定义。把某个 arXiv id 写成「实现了该文公式」之前，先读仓库根目录的 `FAILURE_MODES.md`。
+
+核心测量函数只用标准库。打包元数据要求 PyYAML 以读取 YAML 配置；matplotlib 是可选的，缺它时绘图退回 ASCII。pytest 只在测试时需要。
 
 ## metrics/anchor.py — 早期误差锚定（E1）
 
@@ -11,7 +13,7 @@
 
 **返回**：`float` — 锚定率（0.0 ~ 1.0）。
 
-**锚定判定**：当存在某步 `i` 满足「`correct` 中与 `i` 距离 ≤ radius 的步数占 `steps` 的分数 ≥ anchor_fraction」，即判定该轨迹被锚定。
+**锚定判定**（本地规则，不是 FALCA 的定义）：轨迹至少 3 步；在前 `anchor_fraction` 的步里出现一个不在 `correct` 中的状态，且其后每一步都落在该状态的 `neighbourhood_radius` 内。`correct` 是状态值的集合，不是步下标。长度不足 3 的轨迹不算锚定。
 
 ---
 
@@ -19,8 +21,8 @@
 ```python
 @dataclass
 class Trajectory:
-    steps: list[int]           # 每步结果（编码值）
-    correct: frozenset[int]    # 正确步的索引
+    steps: list[int]           # 每步的状态值
+    correct: frozenset[int]    # 算作正确的状态值，不是步下标
     anchor_fraction: float = 0.20
     neighbourhood_radius: int = 0  # radius>0 仅支持整数状态；非 int 抛 ValueError（v0.4.1 已修）
 ```
@@ -30,10 +32,11 @@ class Trajectory:
 ## metrics/saturation.py — 饱和点 N*（E1）
 
 ### `saturation_point(params: SaturationParams) -> int`
-计算 TTSPM Eq.(14) 饱和点：
+本地饱和点（不是 TTSPM Eq. (14)）：
 ```
-N* = ceil( ln(eps * p_x / F_max) / ln(1 - p_x) )
+N* = max(1, ceil( ln(eps * p_x / F_max) / ln(1 - p_x) ))
 ```
+TTSPM（arXiv:2505.20522）Eq. (14) 是 `ceil(ln(eps / (F_max * p_x)) / ln(1 - p_x))`，且要求 `eps < F_max * p_x`。两者不是同一表达式。见 `FAILURE_MODES.md`。
 **参数**：`params` — `SaturationParams`（`p_x` 单次成功概率 ∈ (0,1)、`f_max` 渐近性能 > 0、`eps` 边际收益阈值，默认 0.01）。
 
 **返回**：`int` — 饱和点 N*（≥ 1）。
@@ -48,7 +51,7 @@ N* = ceil( ln(eps * p_x / F_max) / ln(1 - p_x) )
 **返回**：`float` — 缩放指数。
 
 ### `geometric_ceiling(p_x: float, max_steps: int) -> float`（C5）
-几何天花板：`p_x ** max_steps`。长程推理天花板（arXiv:2609.01660 "How Fast Do Agents Rot?"）的数学形式——链条在 L 步内无错的概率指数衰减。
+本地定义：`p_x ** max_steps`。不是一次实测天花板。先前写在这里的 arXiv id 本次未复核。
 
 **参数**：`p_x` — 单步可靠性 ∈ [0,1]；`max_steps` — 链条长度 ≥ 0。
 
@@ -98,7 +101,7 @@ k 次独立尝试至少成功一次的概率：`1 - (1 - p_x)^k`。
 ---
 
 ### `min_form_credit(pairs: Sequence[StepCredit]) -> float`（C4）
-最小形式 credit（PURE arXiv:2504.15275）：`min` 跨步的精度，反映"最弱环节"视图——链条 credit 只与其最弱步同强。
+逐步标签是否一致的最小值（1 或 0）。不是 PURE（arXiv:2504.15275）的过程奖励 return。
 
 **返回**：`float` — [0,1]。
 
@@ -146,7 +149,7 @@ class StepCredit:
 ---
 
 ### `pattern_robustness_profile(verdicts: Sequence[Verdict]) -> dict`（C3）
-HARVE（arXiv:2606.03131）13 种攻击模式的鲁棒性剖面。对每个模式计算 false_accept 率与样本数，返回 `{"pattern": {"false_accept": float, "n": int}, ...}` + `worst_pattern`。
+调用方传入的每个键上的 false-accept 率。`HARVE_PATTERNS` 是本地 13 个名字，不是从论文加载的攻击集。本次未复核 arXiv:2606.03131。
 
 **返回**：`dict` — 各模式 false_accept 率 + 最弱模式。
 
@@ -166,7 +169,7 @@ class Verdict:
 ## metrics/trajectory.py — 轨迹级诊断（C1，v0.5）
 
 ### `per_step_reliability(steps: Sequence[int], horizon: int | None = None) -> float`
-逐步可靠性（几何定律，arXiv:2609.01660）：正确步占比。`horizon` 给定则只算前 horizon 步。
+本地定义：1 减去错误步占比。`horizon` 给定则只算前 horizon 步。arXiv:2609.01660 本次未复核。
 
 **返回**：`float` — [0,1]；空 → 1.0。
 
@@ -178,7 +181,7 @@ class Verdict:
 ---
 
 ### `snowball_rate(trajectories: Sequence[Sequence[int]]) -> float`
-雪球率（arXiv:2607.16727 CART）：轨迹中出现「错误后不再恢复」的比例。级联（一旦错误，后续全错）= 1.0；完全恢复 = 0.0。
+本地定义：首个错误之后不再出现 0 的轨迹比例。arXiv:2607.16727 本次未复核。
 
 ---
 
@@ -190,7 +193,7 @@ class Verdict:
 ---
 
 ### `late_stage_fragility_index(steps: Sequence[int]) -> float`
-后段脆弱性指数（arXiv:2508.05282 Late-Stage Fragility）：加权错误位置的归一化指数。错误集中在后段 → inf；前段 → 0.0；无错 → 1.0。
+本地定义：按错误位置加权的指数。错误集中在后段 → inf；前段 → 0.0；无错 → 1.0。arXiv:2508.05282 本次未复核。
 
 ---
 
@@ -205,7 +208,7 @@ class Verdict:
 ---
 
 ### `context_drag(trajectories: Sequence[Sequence[int]]) -> float`
-上下文拖拽（arXiv:2602.04288 Contextual Drag）：跨轨迹平均 Levenshtein 编辑距离。相同 → 0.0；完全不同 → 接近 1.0。
+本地定义：相邻序列的平均归一化 Levenshtein 距离（不是 tree edit）。相同 → 0.0；差得越多越大。arXiv:2602.04288 本次未复核。
 
 ---
 
@@ -325,7 +328,7 @@ class CompareConfig:
 | `verifier` | 数据 | 验证器鲁棒性（JSONL `{is_exploit, accepted, score}`） |
 | `trajectory` | 数据 | 轨迹级诊断（JSONL `{steps}`）（C1） |
 | `calibration` | 数据 | 验证器/预测器校准（JSONL `{confidence, outcome}`）（C2） |
-| `dataset` | 生成 | 合成数据（`--n`/`--seed`/`--output`；`--realistic` 文献校准分布 B5） |
+| `dataset` | 生成 | 合成 JSONL（`--n`/`--seed`/`--output`；`--realistic` 仍是合成，只改采样区间） |
 | `report` | 聚合 | Markdown 报告（默认项目 `analyses/lhr-report.md`） |
 | `visualize` | 绘制 | 指标输出图（matplotlib PNG / ASCII 回退） |
 | `compare` | 对比 | 跨配置批量对比表 |

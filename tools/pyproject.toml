@@ -7,6 +7,7 @@ dependencies = ["pyyaml>=6.0"]
 
 [project.optional-dependencies]
 viz = ["matplotlib>=3.5"]
+dev = ["pytest>=7"]
 
 [project.scripts]
 lhr-tools = "lhr_tools.cli:main"

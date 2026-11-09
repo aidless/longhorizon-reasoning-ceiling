@@ -1,16 +1,10 @@
-"""Verifier / predictor calibration metrics (v0.5, C2).
+"""Calibration scores (local code, standard estimators).
 
-Implements the calibration dimensions surfaced by the direction-1
-literature sweep (15 papers, all arXiv-verified):
-
-- expected_calibration_error  — ECE (arXiv:2604.23333 RLCM,
-                                arXiv:2604.09529 VL-Calibration,
-                                arXiv:2604.10585 Calibration Collapse)
-- reliability_diagram          — reliability curve data (ECE histogram)
-- confidence_margin            — confidence margin per decision
-- brier_score                  — Brier score (mean squared error)
-
-All functions are pure (no IO), deterministic, and edge-safe.
+``expected_calibration_error`` is equal-width ECE.
+``brier_score`` is mean squared error of confidence against a binary
+outcome. ArXiv ids previously listed in this module were not re-checked
+and are not a claim that these functions reproduce those papers.
+See FAILURE_MODES.md.
 """
 
 from __future__ import annotations

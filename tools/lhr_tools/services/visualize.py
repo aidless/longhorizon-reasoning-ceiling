@@ -1,8 +1,7 @@
 """Visualization for lhr_tools (A2).
 
-Renders metric outputs as plots. Uses matplotlib when available and
-falls back to ASCII/text rendering otherwise (keeps the toolchain
-zero-dependency in constrained environments).
+Renders metric outputs as plots. Uses matplotlib when it is installed
+and falls back to ASCII text otherwise.
 
 Supported plots:
   - saturation_curve  : pass@k vs k, with the saturation point N* marked
@@ -49,7 +48,7 @@ def saturation_curve(p_x: float, f_max: float, eps: float = 0.01,
         ax.axhline(f_max, color="green", linestyle=":", label=f"F_max={f_max}")
         ax.set_xlabel("attempts k")
         ax.set_ylabel("pass@k")
-        ax.set_title("Saturation curve (TTSPM)")
+        ax.set_title("Saturation curve (local N*)")
         ax.legend()
         ax.grid(alpha=0.3)
         fig.tight_layout()
@@ -176,7 +175,10 @@ def render(metric: str, result: dict[str, Any], output: str | Path | None = None
 # ---------------------------------------------------------------------
 def _selftest() -> None:
     # RED→GREEN: saturation_curve produces output for valid params.
-    out = saturation_curve(0.3, 0.9, k_max=8, n_star=4)
+    import tempfile
+    with tempfile.TemporaryDirectory() as tmp:
+        out = saturation_curve(0.3, 0.9, k_max=8, n_star=4,
+                               output=str(Path(tmp) / "saturation_curve.png"))
     assert out, "saturation_curve returned empty"
     # GREEN: anchor_dist handles empty input gracefully.
     assert anchor_dist([]) == "(无锚定样本)"

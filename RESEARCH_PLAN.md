@@ -1,5 +1,7 @@
 # 长程推理天花板研究计划
 
+> **STATUS: WORK-IN-PROGRESS — not A yet.** This file is a plan and a changelog. It is not a measured ceiling. The saturation expression in code is not TTSPM Eq. (14); the changelog line that pairs N*=807 with "文献 808" was not re-checked against that equation (see [FAILURE_MODES.md](FAILURE_MODES.md)). Lines that say every arXiv id was verified were not re-established in the honesty pass, except the three spot-checks named in FAILURE_MODES.md. Historical test totals below (25, 29, 42, 47, 61, 66) are earlier snapshots. The current total is the one in the root README.
+
 > **项目**：长程推理天花板：早期误差锚定、信用分配与验证时对抗性防御的统一框架
 > **状态**：active ｜ **循环阶段**：假设提出（迭代 0）｜ **创建**：2026-11-01
 > **研究问题**：长程推理的 test-time scaling 天花板是否源于「早期误差锚定」与「中间步信用分配信息不对称」的相互强化，以及能否通过在早期步骤注入可信且不被攻击的验证信息来破除？

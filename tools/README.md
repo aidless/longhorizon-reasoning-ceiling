@@ -1,18 +1,17 @@
 # lhr_tools — 长程推理评估工具链（工程架构）
 
+STATUS: WORK-IN-PROGRESS — not A yet. package version 0.5.1. 13 CLI commands. 72/72 pytest tests, checked by `tests/test_drift.py`. This package runs synthetic JSONL and scalar parameters. It does not report a measured ceiling on a live model. See the repository `FAILURE_MODES.md`.
+
 ## 项目定位
 
-这是一个**工程架构**项目，不是论文写作项目。目标是把「长程推理评估」做成
-一个独立、可运行、可扩展、可复用的工程，具备清晰的模块分层、配置系统、
-数据流、命令树、测试与 CI。
+这是指标管线，不是论文结论，也不是实模型评测。分层、配置、命令和测试都在这个目录里。合成数据与实模型评估是两条路：`tests/data/` 和 `dataset` 属于前者；本仓库没有后者的记录。
 
 ## 架构分层
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  CLI 层   bin/lhr-tools  lhr_tools/cli.py               │
-│  （命令树：anchor / saturation / credit / verifier /    │
-│    dataset / report / config / selftest）               │
+│  （13 CLI commands，见下方命令树）                        │
 ├─────────────────────────────────────────────────────────┤
 │  服务层   lhr_tools/services/                           │
 │  （编排：加载配置 → 读取数据 → 调用测量 → 生成报告）     │
@@ -41,21 +40,19 @@ dataset.jsonl ──→ IO.read_jsonl() ──→ schema 校验
 result.json ──→ report.md
 ```
 
-> **注意**：`saturation` 是唯一的**参数驱动**指标——它从 `--px`/`--fmax`/`--eps`
-> 直接计算 N*，不读取 JSONL 数据文件。其余三个指标（anchor/credit/verifier）
-> 均为数据驱动，走上面的完整数据流。
+> **注意**：`saturation` 是**参数驱动**的。它从 `--px` / `--fmax` / `--eps` 计算本地 N*，不读 JSONL。本地表达式不是 TTSPM Eq. (14)，见 `FAILURE_MODES.md`。`anchor` / `credit` / `verifier` / `trajectory` / `calibration` 读 JSONL。
 
 ## 命令树
 
 ```
 lhr-tools
 ├── anchor        # 锚定率（FALCA）— 数据驱动
-├── saturation    # 饱和点 N*（TTSPM Eq.14）— 参数驱动
+├── saturation    # 本地 N*（不是 TTSPM Eq. 14）— 参数驱动
 ├── credit        # 早期步 credit 精度（Cohen's κ）— 数据驱动
 ├── verifier      # 验证器鲁棒性（RHB）— 数据驱动
 ├── trajectory    # 轨迹级诊断（C1，v0.5）— 数据驱动
 ├── calibration   # 验证器/预测器校准（C2，v0.5）— 数据驱动
-├── dataset       # 数据集生成/管理（AIME / MATH-500 / 合成）
+├── dataset       # 合成 JSONL（不是 AIME / MATH-500 下载）
 ├── report        # 报告生成（md）
 ├── config        # 配置查看/校验
 ├── visualize     # 指标输出图
@@ -68,7 +65,7 @@ lhr-tools
 
 ```
 tools/
-├── pyproject.toml          # 打包配置（console 脚本，v0.5.0）
+├── pyproject.toml          # 打包配置（package version 0.5.1）
 ├── README.md               # 本文档
 ├── lhr_tools/
 │   ├── __init__.py
@@ -111,31 +108,31 @@ tools/
 1. **测量层纯函数**：`metrics/` 下的函数无 IO、无副作用，输入输出可预测，
    便于单测与属性测试。
 2. **确定性**：相同输入 → 相同输出，无随机状态（随机仅限数据生成器，且种子固定）。
-3. **零第三方依赖**：核心测量只用标准库；配置层可选 PyYAML（未装则回退 JSON）。
+3. **依赖写在打包元数据里**：测量函数只用标准库。安装本包会拉取 PyYAML（读 YAML 配置）。matplotlib 可选，缺它时绘图退回 ASCII。pytest 只用于测试。
 4. **RED→GREEN 测试**：每个测量函数既有「违规必须红」也有「合规必须绿」的断言。
 5. **配置优先**：所有可调参数走配置，不硬编码；CLI 参数可覆盖配置。
 
 ## CI
 
-GitHub Actions 工作流 `.github/workflows/ci.yml` 在 push/PR 时自动运行：
-- 3 个 Python 版本（3.10 / 3.11 / 3.12）矩阵
-- 全套件测试（metrics / io / cli 三套 + selftest）
-- CLI 入口冒烟（`lhr-tools --help` / `config --show` / `saturation --px`）
+GitHub Actions 工作流 `.github/workflows/ci.yml` 在 `tools/**`、根 `README.md`、`FAILURE_MODES.md` 或工作流自身变更时运行：
+- Python 3.10 / 3.11 / 3.12
+- `pip install -e ".[dev,viz]"` 后 `python -m pytest tests/ -q`
+- `lhr-tools selftest`
+- fixture 冒烟：`tests/data/` 里的 anchor、credit、verifier，外加 `saturation --px 0.3 --fmax 0.9 --eps 0.01`
 
 ## 快速开始
 
+仓库根 README 写了从干净克隆安装并跑 pytest 的命令。下面是已提交的合成 fixture，不是模型输出：
+
 ```bash
 cd tools
-python3 -m lhr_tools.cli selftest       # 自检（RED→GREEN 7 模块）
-python3 -m lhr_tools.cli config --show  # 查看配置
-python3 -m lhr_tools.cli dataset anchor --n 10 --seed 42 --output data/anchor.jsonl
-python3 -m lhr_tools.cli dataset verifier --n 100 --seed 7 --realistic --output data/verifier.jsonl  # B5 文献校准分布
-python3 -m lhr_tools.cli anchor data/anchor.jsonl
-python3 -m lhr_tools.cli saturation --px 0.5 --fmax 0.9   # 参数驱动
-python3 -m lhr_tools.cli verifier data/verifier.jsonl
-python3 -m lhr_tools.cli trajectory data/trajectory.jsonl  # C1 轨迹诊断
-python3 -m lhr_tools.cli calibration data/calibration.jsonl # C2 校准
+python3 -m lhr_tools.cli selftest
+python3 -m lhr_tools.cli anchor tests/data/anchor.jsonl
+python3 -m lhr_tools.cli credit tests/data/credit.jsonl
+python3 -m lhr_tools.cli verifier tests/data/verifier.jsonl
+python3 -m lhr_tools.cli saturation --px 0.3 --fmax 0.9 --eps 0.01
 ```
 
-生成的数据文件（`data/anchor.jsonl`）可直接喂给 `anchor` 命令。`saturation`
-不需要数据文件，直接给 `--px` 即可。
+`dataset` 另写一批合成行。输出目录必须已经存在。`--realistic` 只是改用 `io/generate.py` 里写下的数值区间，仍然是合成数据。
+
+`trajectory` 和 `calibration` 没有提交 fixture。它们的输入分别是 `{steps: [0/1, ...]}` 和 `{confidence, outcome}` 的 JSONL。不要把缺文件的路径当成已经跑过的评测。

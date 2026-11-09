@@ -2,66 +2,73 @@
 
 [![CI](https://github.com/aidless/longhorizon-reasoning-ceiling/actions/workflows/ci.yml/badge.svg)](https://github.com/aidless/longhorizon-reasoning-ceiling/actions/workflows/ci.yml)
 
-> **English TL;DR**: An engineering toolchain for measuring the long-horizon reasoning ceiling: anchor rate, saturation points, credit assignment, verifier robustness, trajectory diagnostics, and calibration metrics, each mapped to cited literature. Install the `lhr-tools` Python package with `pip install -e .` and drive it through a 13-command CLI (`lhr-tools --help`). An independent-researcher project with no institutional affiliation, it aims for reproducible, zero-dependency, verifiable evaluation rather than a paper claim.
+lhr-tools is metric plumbing for ceiling probes: anchor, saturation, credit, verifier, trajectory, and calibration.
+It runs on synthetic JSONL and on scalar parameters. It does not report a measured ceiling on a live model; no such run is in this repository.
+STATUS: WORK-IN-PROGRESS — not A yet. A passing toolchain is not a research conclusion.
 
-评估长程推理能力天花板（long-horizon reasoning ceiling）的工程级工具链：锚定率、饱和点、credit assignment、验证器鲁棒性、轨迹级诊断与校准指标。
+同一句话：这是天花板探针的指标管线，输入是合成 JSONL 或标量参数。仓库里没有实模型测量结果。STATUS: WORK-IN-PROGRESS — not A yet.
 
-> 独立研究者项目，无机构隶属。目标从论文转向工程架构：提供可复现、零依赖、可校验的评估工具。
+## Gaps (why this is not A)
 
-## 项目结构
+- No live-model trajectories and no committed ceiling measurement. `experiments/` holds designs, not runs.
+- Local formulas are not verified reproductions of the cited papers. The saturation expression is not TTSPM Eq. (14). Details are in [FAILURE_MODES.md](FAILURE_MODES.md).
+- ArXiv ids other than the three spot-checks in FAILURE_MODES were not re-verified in this pass.
+- `dataset --realistic` draws numbers from ranges written in code. A green test on that draw is not a paper replication.
+- [analyses/lhr-report.md](analyses/lhr-report.md) is a two-row fixture render, not an evaluation.
+- This package is not published on PyPI. The badge above is the GitHub Actions workflow, not a download or a score.
+- PNG tests need matplotlib. Core metric functions do not import it. PyYAML is a package dependency for YAML config files.
 
-```
-longhorizon-reasoning-ceiling/
-├── RESEARCH_PLAN.md          # 研究计划（假设 H1-H3 + 实验 E1-E3 + 文献）
-├── tools/                    # lhr-tools 工具链（Python 包）
-│   ├── lhr_tools/
-│   │   ├── metrics/          # 指标模块：anchor / saturation / credit / verifier / trajectory / calibration
-│   │   ├── io/               # 数据：generate / importer / jsonl / schema
-│   │   ├── services/         # 服务：pipeline / reporter / visualize / compare / config
-│   │   └── cli.py            # CLI 入口（13 命令）
-│   ├── tests/                # 测试（69/69 通过）
-│   ├── docs/API.md           # API 参考
-│   └── README.md             # 工具链使用说明
-├── experiments/              # 实验设计（E1-E3）
-└── analyses/                 # 分析输出
-```
+## Claims locked to this tree
 
-## 快速开始
+| Claim | Value |
+| --- | --- |
+| package version 0.5.1 | `tools/pyproject.toml` and `lhr_tools.__version__` |
+| 13 CLI commands | subcommands of `lhr-tools` |
+| 72/72 | module-level `test_*` functions under `tools/tests/` |
+
+`tools/tests/test_drift.py` fails if a README above drifts from those three facts.
+
+## Offline path
+
+From a fresh clone, with network only for the one install (no model download). `python3 -m venv` needs the stdlib venv module (`python3-venv` on Debian/Ubuntu). Python is >= 3.10.
 
 ```bash
 cd tools
-pip install -e .
-mkdir -p data                                    # dataset 的 --output 不会自动建目录
-lhr-tools --help
+python3 -m venv .venv
+. .venv/bin/activate
+pip install -e ".[dev,viz]"
+python -m pytest tests/ -q
+python -m lhr_tools.cli selftest
+lhr-tools anchor tests/data/anchor.jsonl
+lhr-tools credit tests/data/credit.jsonl
+lhr-tools verifier tests/data/verifier.jsonl
+lhr-tools saturation --px 0.3 --fmax 0.9 --eps 0.01
+```
+
+`tests/data/*.jsonl` are two-row synthetic fixtures. `saturation` does not read a file. `dataset` writes more synthetic rows; the output directory must already exist. `verifier`, `anchor`, `credit`, `trajectory`, `calibration`, and `report` take positional input paths, not `--input`.
+
+```bash
+mkdir -p data
 lhr-tools dataset anchor --n 10 --seed 42 --output data/anchor.jsonl
-lhr-tools saturation --px 0.3 --fmax 0.95 --eps 0.01
-lhr-tools dataset verifier --n 10 --seed 42 --output data/verifier.jsonl
-lhr-tools verifier data/verifier.jsonl          # verifier 收位置参数，不接受 --input
 lhr-tools anchor data/anchor.jsonl > data/anchor.json
-lhr-tools report data/anchor.json --output ../analyses/lhr-report.md   # report 收位置参数（一个或多个结果 JSON）
+lhr-tools report data/anchor.json --output analyses/lhr-report.md
 ```
 
-两处容易踩坑的写法：`verifier` 和 `report` 的输入文件都是**位置参数**（`report` 可接多个结果 JSON）；`dataset --output` 指向的目录必须先存在，否则报 `FileNotFoundError`。
+`report` without `--output` writes `analyses/lhr-report.md` under the current directory. The path is not resolved against the install location.
 
-## 指标概览
+CI (`.github/workflows/ci.yml`) runs `python -m pytest tests/ -q` on Python 3.10, 3.11, and 3.12 after `pip install -e ".[dev,viz]"`, then `selftest` and the fixture commands above.
 
-| 类别 | 指标 | 文献来源 |
-|------|------|---------|
-| 锚定 | `anchor_rate` / `anchored_ids` | 误差锚定假说 |
-| 饱和 | `saturation_point` / `pass_at_k` / `estimate_px` / `bootstrap_nstar_ci` | TTSPM (arXiv:2505.20522) |
-| Credit | `cohens_kappa` / `credit_precision` / `min_form_credit` | PURE (arXiv:2504.15275) |
-| 验证器 | `false_accept_rate` / `false_reject_rate` / `auc_roc` / `auprc` / `pattern_robustness_profile` | RHB / HARVE |
-| 轨迹 | `per_step_reliability` / `geometric_ceiling` / `snowball_rate` / `context_drag` | arXiv:2609.01660 / CART |
-| 校准 | `expected_calibration_error` / `brier_score` / `confidence_margin` | VL-Cal / SLATE |
+## Layout
 
-## 开发
-
-```bash
-cd tools
-python3 -m pytest tests/ -q   # 全套件 69/69
-lhr-tools selftest            # 模块自检（RED→GREEN）
+```
+README.md                 problem statement, claims, offline path
+FAILURE_MODES.md          synthetic false greens and citation gaps
+RESEARCH_PLAN.md          plan and changelog; not a result
+experiments/              E1–E3 designs; not runs
+analyses/lhr-report.md    fixture render
+tools/                    lhr-tools package, tests, API notes
 ```
 
-## 许可
+## License
 
-MIT License。详见 [LICENSE](LICENSE)。
+MIT. See [LICENSE](LICENSE).
