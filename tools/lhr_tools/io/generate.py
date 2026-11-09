@@ -1,13 +1,11 @@
-"""Synthetic data generation for the toolchain.
+"""Synthetic data generation.
 
-Generates deterministic (seeded) trajectories / verdicts for smoke-testing
-the toolchain without needing a real model run. Seed is fixed by default
-so output is reproducible.
+Seeded rows for smoke tests. This is not model output.
 
-B5 adds ``generate_realistic_rows`` — a generator that reproduces the
-empirical distribution reported in the literature (RHB arXiv:2605.02964
-exploit-rate spread; TRCA arXiv:2608.16156 credit accuracy) so the
-toolchain can be exercised on data that resembles real model output.
+``generate_realistic_rows`` draws an exploit rate or a credit accuracy
+from numeric ranges written below. Those ranges are notes in this file.
+They were not re-checked against a paper in the honesty pass, and the
+generator does not replay a published dataset. See FAILURE_MODES.md.
 """
 
 from __future__ import annotations
@@ -71,40 +69,32 @@ def generate_verifier_rows(n: int = 10, seed: int = 42,
     return rows
 
 
-# Literature-calibrated parameters (B5).
-# RHB arXiv:2605.02964: 13 frontier models, exploit rate 0%–13.9%.
-# TRCA arXiv:2608.16156: credit accuracy typically 72%–96%.
-_RHB_EXPLOIT_RANGE = (0.0, 0.139)
-_TRCA_CREDIT_ACCURACY = 0.85  # mid-range
+# Numeric ranges stored in this file. Not a replay of a paper dataset.
+_EXPLOIT_RANGE = (0.0, 0.139)
+_CREDIT_ACCURACY = 0.85
 
 
 def generate_realistic_rows(metric: str, n: int = 100, seed: int = 42,
                             **kwargs: Any) -> list[dict[str, Any]]:
-    """Generate data calibrated to literature-reported distributions.
+    """Synthetic rows whose knobs are drawn from ranges in this file.
 
-    Unlike ``generate`` (which uses round default parameters), this
-    reproduces the *empirical spread* seen in real model runs:
+    Unlike ``generate`` (fixed default rates), this draw is:
 
-      - verifier: exploit rate drawn uniformly from [0%, 13.9%]
-        (RHB arXiv:2605.02964, 13 frontier models)
-      - credit: accuracy drawn from a narrow band around 85%
-        (TRCA arXiv:2608.16156 effective-transition signal ~72%)
-      - anchor: anchoring probability drawn from a wide band
+      - verifier: exploit rate uniform on ``_EXPLOIT_RANGE``
+      - credit: accuracy within 0.05 of ``_CREDIT_ACCURACY``
+      - anchor: anchoring probability uniform on [0.3, 0.7]
 
-    Parameters mirror ``generate`` but default ``n`` is larger (100) to
-    give the toolchain a realistic sample size.
+    Default ``n`` is 100. The rows are still synthetic.
     """
     rng = random.Random(seed)
 
     if metric == "verifier":
-        # Exploit rate uniform in the RHB-observed range.
-        exploit_rate = rng.uniform(*_RHB_EXPLOIT_RANGE)
-        # Verifier quality high but not perfect (real judges err).
+        exploit_rate = rng.uniform(*_EXPLOIT_RANGE)
         quality = rng.uniform(0.75, 0.95)
         return generate_verifier_rows(n=n, seed=seed, exploit_rate=exploit_rate,
                                       verifier_quality=quality)
     if metric == "credit":
-        accuracy = _TRCA_CREDIT_ACCURACY + rng.uniform(-0.05, 0.05)
+        accuracy = _CREDIT_ACCURACY + rng.uniform(-0.05, 0.05)
         return generate_credit_rows(n=n, seed=seed, accuracy=accuracy)
     if metric == "anchor":
         anchor_prob = rng.uniform(0.3, 0.7)
@@ -136,7 +126,7 @@ def generate(metric: str, n: int = 10, seed: int = 42,
 
 def generate_realistic(metric: str, n: int = 100, seed: int = 42,
                        **kwargs: Any) -> list[dict[str, Any]]:
-    """Dispatch to the literature-calibrated generator (B5)."""
+    """Dispatch to ``generate_realistic_rows`` (synthetic preset)."""
     fn = REALISTIC_GENERATORS.get(metric)
     if fn is None:
         raise ValueError(f"unknown metric: {metric}")

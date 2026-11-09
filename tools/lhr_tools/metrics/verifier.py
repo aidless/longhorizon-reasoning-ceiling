@@ -125,9 +125,10 @@ def auprc(verdicts: Sequence[Verdict]) -> float:
 
 
 # ---------------------------------------------------------------------
-# C3: pattern robustness profile (arXiv:2606.03131 HARVE)
+# Local pattern-name catalog. Not checked against arXiv:2606.03131.
+# pattern_robustness_profile scores the dict the caller passes in.
 # ---------------------------------------------------------------------
-# The 13 HARVE adversarial patterns a verifier may be attacked with.
+# Thirteen local names. They are not loaded from a paper.
 HARVE_PATTERNS: tuple[str, ...] = (
     "sycophancy",          # verifier agrees with model's own assertion
     "length_bias",         # longer CoT → higher score (length exploit)
@@ -148,7 +149,10 @@ HARVE_PATTERNS: tuple[str, ...] = (
 def pattern_robustness_profile(
     verdicts_by_pattern: dict[str, Sequence[Verdict]],
 ) -> dict[str, dict[str, float]]:
-    """Per-pattern vulnerability profile (HARVE 13-pattern suite).
+    """Per-key false-accept rates for a caller-supplied dict.
+
+    The ``HARVE_PATTERNS`` tuple is a local name list. This function does
+    not fetch or apply a paper's attack set.
 
     For each adversarial pattern, computes the false-accept rate — the
     fraction of exploit samples (under that pattern) the verifier
@@ -157,9 +161,9 @@ def pattern_robustness_profile(
     Parameters
     ----------
     verdicts_by_pattern : dict[str, sequence of Verdict]
-        Map from pattern name to the verifier's verdicts on exploit
-        samples generated under that pattern. Keys should be drawn from
-        HARVE_PATTERNS; unknown keys are reported as-is.
+        Map from a caller-chosen name to verdicts. ``HARVE_PATTERNS`` is
+        a local name list, not a paper's attack set. Unknown keys are
+        reported as-is.
 
     Returns
     -------

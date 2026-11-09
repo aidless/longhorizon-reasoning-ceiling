@@ -1,8 +1,10 @@
-"""Early-step credit precision (E2).
+"""Credit scores on categorical labels (local).
 
-Measures how precisely the credit assigned to early steps matches human
-annotations, using Cohen's kappa (inter-annotator agreement), following
-the TRCA (arXiv:2608.16156) diagnostics.
+``cohens_kappa`` is Cohen's kappa. ``credit_precision`` is label
+accuracy. ``min_form_credit`` is the minimum of per-step match bits.
+
+PURE (arXiv:2504.15275) defines a min-form RL return over process
+rewards. That is a different object. See FAILURE_MODES.md.
 """
 
 from __future__ import annotations
@@ -51,18 +53,13 @@ def credit_precision(pairs: Sequence[StepCredit]) -> float:
 
 
 # ---------------------------------------------------------------------
-# C4: min-form credit + weakest-link dominance (arXiv:2504.15275 PURE)
+# Local label-match reductions. Not PURE (arXiv:2504.15275).
 # ---------------------------------------------------------------------
 def min_form_credit(pairs: Sequence[StepCredit]) -> float:
-    """Min-form credit: minimum over per-step precision.
+    """Minimum of per-step label matches.
 
-    PURE (arXiv:2504.15275) shows credit assignment via a min-form
-    operator is more robust to early-step information asymmetry. The
-    min-form credit is the minimum over steps of per-step precision
-    (1.0 if the step's credit matches ground truth, else 0.0).
-
-    This captures the "weakest link" view: a chain's credit is only as
-    strong as its weakest step.
+    Each step contributes 1.0 when ``pred == truth`` and 0.0 otherwise.
+    This is not PURE's min-form return (arXiv:2504.15275).
 
     Parameters
     ----------
@@ -80,12 +77,12 @@ def min_form_credit(pairs: Sequence[StepCredit]) -> float:
 
 
 def weakest_link_dominance(pairs: Sequence[StepCredit]) -> float:
-    """Fraction of trajectories where the weakest link determines outcome.
+    """Compare min step-match with the all-match bit.
 
-    In a PURE-style analysis, the weakest step (lowest per-step
-    reliability) dominates the chain's success. This function reports the
-    fraction of pairs where the minimum step precision equals the
-    chain-level outcome (i.e. the weakest link is the binding constraint).
+    Both sides are functions of the same 0/1 match bits, so they are
+    equal whenever ``pairs`` is non-empty and this returns 1.0. Empty
+    input returns 0.0. It does not measure a separate dominance rate.
+    See FAILURE_MODES.md.
 
     Parameters
     ----------

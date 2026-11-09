@@ -2,8 +2,8 @@
 
 Command tree:
   anchor       — compute anchor rate from a trajectory JSONL
-  saturation   — estimate the TTSPM saturation point N* (parameter-driven:
-                 --px / --successes+--attempts, no data file)
+  saturation   — local N* from --px / --successes+--attempts (not TTSPM
+                 Eq. 14; no data file)
   credit       — early-step credit precision (Cohen's kappa)
   verifier     — verifier robustness (false-accept / false-reject / AUC)
   trajectory   — trajectory-level diagnostics (per-step reliability,
@@ -15,8 +15,8 @@ Command tree:
   import       — convert raw reasoning trajectory JSONL → metric-row JSONL
   selftest     — run all module self-tests (RED→GREEN)
 
-Data-driven metrics (anchor/credit/verifier) read a JSONL file; the
-saturation metric is the sole exception — it takes scalar parameters.
+Data-driven commands (anchor, credit, verifier, trajectory, calibration)
+read a JSONL file. saturation takes scalar parameters and does not.
 """
 
 from __future__ import annotations
@@ -92,8 +92,8 @@ def _cmd_dataset(args: argparse.Namespace) -> int:
         print(f"schema errors: {errors[:3]}", file=sys.stderr)
         return 1
     write_jsonl(args.output, rows)
-    print(f"已生成 {len(rows)} 行 → {args.output}"
-          + ("（文献校准分布，B5）" if args.realistic else ""))
+    kind = "synthetic preset" if args.realistic else "synthetic"
+    print(f"已生成 {len(rows)} 行 ({kind}) → {args.output}")
     return 0
 
 
@@ -189,12 +189,10 @@ def _cmd_report(args: argparse.Namespace) -> int:
     for path in args.inputs:
         with open(path, "r", encoding="utf-8") as f:
             results.append(json.load(f))
-    # Default output to the project analyses/ directory when not given.
+    # Cwd-relative path. Do not resolve against the install location.
     if args.output is None:
-        project_root = Path(__file__).resolve().parent.parent.parent
-        analyses = project_root / "analyses"
-        analyses.mkdir(parents=True, exist_ok=True)
-        args.output = str(analyses / "lhr-report.md")
+        args.output = "analyses/lhr-report.md"
+        Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     out = reporter.generate_report(results, args.output)
     print(f"报告已写入 {out}")
     return 0
@@ -293,7 +291,7 @@ def build_parser() -> argparse.ArgumentParser:
     a.add_argument("--radius", type=int, default=None)
     a.set_defaults(func=_cmd_anchor)
 
-    s = sub.add_parser("saturation", help="estimate TTSPM saturation point")
+    s = sub.add_parser("saturation", help="local N* from px/fmax/eps (not TTSPM Eq. 14)")
     s.add_argument("--px", type=float, default=None)
     s.add_argument("--successes", type=int, default=None)
     s.add_argument("--attempts", type=int, default=None)
@@ -314,14 +312,14 @@ def build_parser() -> argparse.ArgumentParser:
     d.add_argument("--n", type=int, default=10)
     d.add_argument("--seed", type=int, default=42)
     d.add_argument("--realistic", action="store_true",
-                   help="use literature-calibrated distributions (B5, n default 100)")
+                   help="draw rates from ranges stored in io/generate.py (still synthetic)")
     d.add_argument("--output", required=True)
     d.set_defaults(func=_cmd_dataset)
 
     r = sub.add_parser("report", help="generate Markdown report")
     r.add_argument("inputs", nargs="+", help="result JSON files")
     r.add_argument("--output", default=None,
-                   help="output .md path (default: project analyses/lhr-report.md)")
+                   help="output .md path (default: analyses/lhr-report.md under the current directory)")
     r.set_defaults(func=_cmd_report)
 
     vz = sub.add_parser("visualize", help="render metric output as a plot")

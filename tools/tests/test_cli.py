@@ -8,6 +8,7 @@ from __future__ import annotations
 import contextlib
 import io
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -43,6 +44,8 @@ def test_cli_saturation():
     result = json.loads(out)
     assert result["metric"] == "saturation_point"
     assert result["N_star"] >= 1
+    from lhr_tools.cli import build_parser
+    assert "not TTSPM Eq. 14" in build_parser().format_help()
 
 
 def test_cli_saturation_no_params():
@@ -129,18 +132,24 @@ def test_cli_selftest():
 
 
 def test_cli_report_default_output():
-    """RED→GREEN: report with no --output defaults to project analyses/."""
+    """Default report path is cwd-relative and is not a live-model claim."""
     with tempfile.TemporaryDirectory() as tmp:
-        # Write result JSONs to tmp.
-        r1 = Path(tmp) / "r1.json"
-        r1.write_text(json.dumps({"metric": "anchor", "value": 0.5,
-                                  "n": 2, "data_file": "x.jsonl"}),
-                      encoding="utf-8")
-        rc, out = _run(["report", str(r1)])
-        assert rc == 0
-        # Default output is project analyses/lhr-report.md.
-        assert "analyses" in out, f"should mention analyses dir, got: {out}"
-        assert Path(out.split("报告已写入 ")[1].strip()).exists()
+        prev = os.getcwd()
+        os.chdir(tmp)
+        try:
+            r1 = Path("r1.json")
+            r1.write_text(json.dumps({"metric": "anchor", "value": 0.5,
+                                      "n": 2, "data_file": "x.jsonl"}),
+                          encoding="utf-8")
+            rc, out = _run(["report", "r1.json"])
+            assert rc == 0
+            written = out.split("报告已写入 ", 1)[1].strip()
+            assert written == "analyses/lhr-report.md"
+            assert not Path(written).is_absolute()
+            body = Path(written).read_text(encoding="utf-8")
+            assert "Not a live-model ceiling measurement" in body
+        finally:
+            os.chdir(prev)
 
 
 def test_cli_red_unknown_command():

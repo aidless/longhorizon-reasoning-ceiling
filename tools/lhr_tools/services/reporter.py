@@ -8,6 +8,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+_DISCLAIMER = (
+    "> Formats the metric JSON passed to this command. "
+    "Not a live-model ceiling measurement."
+)
+
 _METRIC_TITLES = {
     "anchor": "早期误差锚定率",
     "saturation": "饱和点 N*",
@@ -46,7 +51,7 @@ def generate_report(results: list[dict[str, Any]],
 
     If `output` is given, writes to file and returns the path as string.
     """
-    parts = ["# 长程推理评估报告", ""]
+    parts = ["# 长程推理评估报告", "", _DISCLAIMER, ""]
     for r in results:
         parts.append(result_to_md(r))
     md = "\n".join(parts)
