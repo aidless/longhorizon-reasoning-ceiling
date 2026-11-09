@@ -1,5 +1,7 @@
 # Long-Horizon Reasoning Evaluation Toolchain
 
+[![CI](https://github.com/aidless/longhorizon-reasoning-ceiling/actions/workflows/ci.yml/badge.svg)](https://github.com/aidless/longhorizon-reasoning-ceiling/actions/workflows/ci.yml)
+
 评估长程推理能力天花板（long-horizon reasoning ceiling）的工程级工具链：锚定率、饱和点、credit assignment、验证器鲁棒性、轨迹级诊断与校准指标。
 
 > 独立研究者项目，无机构隶属。目标从论文转向工程架构：提供可复现、零依赖、可校验的评估工具。
