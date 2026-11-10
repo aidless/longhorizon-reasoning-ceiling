@@ -43,6 +43,71 @@ lhr-tools report data/anchor.json --output ../analyses/lhr-report.md   # report 
 
 两处容易踩坑的写法：`verifier` 和 `report` 的输入文件都是**位置参数**（`report` 可接多个结果 JSON）；`dataset --output` 指向的目录必须先存在，否则报 `FileNotFoundError`。
 
+Quickstart 实测（2026-11-10，真实输出节选；本机 pip 受 PEP 668 限制，
+用 `PYTHONPATH=tools python3 -m lhr_tools.cli` 等价运行）：
+
+```text
+$ lhr-tools saturation --px 0.3 --fmax 0.95 --eps 0.01
+{
+  "metric": "saturation_point",
+  "N_star": 17,
+  "p_x": 0.3,
+  "f_max": 0.95,
+  "eps": 0.01,
+  "pass_at_1": 0.30000000000000004,
+  "pass_at_4": 0.7599,
+  ...
+}
+
+$ lhr-tools dataset anchor --n 10 --seed 42 --output data/anchor.jsonl
+已生成 10 行 → data/anchor.jsonl
+
+$ lhr-tools anchor data/anchor.jsonl
+{
+  "value": 0.5,
+  "n_anchored": 5,
+  "anchored_indices": [1, 2, 6, 7, 8],
+  "metric": "anchor",
+  "n": 10,
+  ...
+}
+```
+
+## Results（实验状态与已有结果）
+
+### 工具链验证（真实跑过）
+
+| 检查 | 命令 | 实测结果（2026-11-10） |
+|---|---|---|
+| 单元测试 | `python3 -m pytest tests/ -q`（在 `tools/`） | **69 passed in 1.60s**（0 失败） |
+| CLI 自检 | `lhr-tools selftest` | 13 命令齐备（`--help` 实测列出 anchor/saturation/credit/verifier/dataset/report/visualize/compare/config/import/trajectory/calibration/selftest） |
+| saturation 数值例 | `lhr-tools saturation --px 0.3 --fmax 0.95 --eps 0.01` | N*=17, pass@1=0.30, pass@4=0.7599 |
+| anchor 数值例 | `lhr-tools anchor data/anchor.jsonl`（seed 42 生成 10 行） | value=0.5, n_anchored=5 |
+
+### 示例报告（已有）
+
+`analyses/lhr-report.md` 是**工具链演示报告**（`lhr-tools report` 的输出样例）：
+锚定率 value=0.5000，n=2，数据源为合成 demo 文件——它验证的是 report 链路，
+**不是**真实模型实验结果。
+
+### 实验执行状态（诚实标注）
+
+| 实验 | 假设 | 状态 | 结果 |
+|---|---|---|---|
+| E1 锚定-算力解耦 | H1（TTSPM/FALCA/ParaThinker 依据） | **细化完成，未执行**（2026-11-01） | **NOT YET MEASURED**：`experiments/E1-anchor-compute/` 只有 `design.md`，无结果文件。未执行原因：需要 5 基准 × 908 题的模型推理算力（小模型扫曲面 + 大模型验证格），按本工作区纪律实验须上云，尚未排期执行 |
+| E2 步级验证注入 | H2 | **细化完成，未执行** | **NOT YET MEASURED**（四臂设计已在 `design.md` 定稿，无运行日志） |
+| E3 验证器对抗鲁棒性 | H3 | **细化完成，未执行** | **NOT YET MEASURED**（三类验证器设计定稿，无运行日志） |
+
+因此：本仓库目前**不携带任何真实模型实验数字**；全部可验证的数字是工具链
+测试与合成数据的指标示例（上表），所有真实实验数字待 E1–E3 执行后补录。
+
+## What this doesn't claim / Limits
+
+- **不声明任何论文级结论**：目标是可复现、零依赖、可校验的评估工具链，不是实证 claim。
+- 指标概览表中的文献（TTSPM、PURE、RHB 等）映射的是**指标的出处**，不是「本工具已在对应文献设置下复现其结果」。
+- E1–E3 已设计未执行；在结果落盘前，任何引用本仓的说法应限定为「工具链 + 实验设计」。
+- `analyses/lhr-report.md` 为合成数据演示，勿当作实验证据引用。
+
 ## 指标概览
 
 | 类别 | 指标 | 文献来源 |
