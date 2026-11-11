@@ -130,3 +130,43 @@ lhr-tools selftest            # 模块自检（RED→GREEN）
 ## 许可
 
 MIT License。详见 [LICENSE](LICENSE)。
+
+## U1 live recompute (executed 2026-11-11)
+
+The values below come from executing the toolchain in this repository during
+this pass; they are synthetic/demo computations, **not** model experiment
+results.
+
+| Live check | Value | Source |
+|---|---|---|
+| `saturation` N* | 17 | live `PYTHONPATH=tools python3 -m lhr_tools.cli saturation --px 0.3 --fmax 0.95 --eps 0.01` |
+| `p_x` / `f_max` / `eps` | 0.3 / 0.95 / 0.01 | same JSON output |
+| `pass_at_1` | 0.30000000000000004 | same |
+| `pass_at_4` | 0.7599 | same |
+| `pass_at_8` | 0.94235199 | same |
+| `pass_at_16` | 0.9966767069430399 | same |
+| `pass_at_32` | 0.9999889557232575 | same |
+| `anchor` value / n_anchored / n | 0.5 / 5 / 10 | live `dataset anchor --n 10 --seed 42` + `anchor <file>` |
+| Toolchain unit tests | **69 passed in 1.16s** | live `python3 -m pytest tests/ -q` in `tools/` (exit 0) |
+
+Experiment inventory (checked on disk this pass):
+
+| Experiment dir | Contents | Status |
+|---|---|---|
+| `E1-anchor-compute` | 1 file(s), all design/notes | **NOT YET MEASURED** |
+| `E2-step-verification` | 1 file(s), all design/notes | **NOT YET MEASURED** |
+| `E3-verifier-robustness` | 1 file(s), all design/notes | **NOT YET MEASURED** |
+
+**NOT YET MEASURED**: E1 anchor-compute decoupling, E2 step-level verification,
+and E3 verifier robustness. The directories above contain design documents and
+no result files; the existing "实验执行状态（诚实标注）" table above is
+unchanged. Reproduce the toolchain numbers (no model, no network):
+
+```bash
+PYTHONPATH=tools python3 -m lhr_tools.cli saturation --px 0.3 --fmax 0.95 --eps 0.01
+PYTHONPATH=tools python3 -m lhr_tools.cli dataset anchor --n 10 --seed 42 --output data/anchor.jsonl
+PYTHONPATH=tools python3 -m lhr_tools.cli anchor data/anchor.jsonl
+cd tools && python3 -m pytest tests/ -q
+```
+
+<!-- figure: pending real measurement -->
