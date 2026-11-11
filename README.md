@@ -157,6 +157,8 @@ Experiment inventory (checked on disk this pass):
 | `E2-step-verification` | 1 file(s), all design/notes | **NOT YET MEASURED** |
 | `E3-verifier-robustness` | 1 file(s), all design/notes | **NOT YET MEASURED** |
 
+Inventory sources (design docs only; every row below is **NOT YET MEASURED**): `experiments/E1-anchor-compute/design.md:1`, `experiments/E2-step-verification/design.md:1`, `experiments/E3-verifier-robustness/design.md:1`.
+
 **NOT YET MEASURED**: E1 anchor-compute decoupling, E2 step-level verification,
 and E3 verifier robustness. The directories above contain design documents and
 no result files; the existing "实验执行状态（诚实标注）" table above is
