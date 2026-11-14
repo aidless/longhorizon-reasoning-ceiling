@@ -21,7 +21,6 @@ from lhr_tools.io.jsonl import read_jsonl
 from lhr_tools.io.schema import validate_rows
 from lhr_tools.metrics.anchor import Trajectory, anchor_rate, anchored_ids
 from lhr_tools.metrics.credit import StepCredit, cohens_kappa, credit_precision
-from lhr_tools.metrics.saturation import SaturationParams, saturation_point
 from lhr_tools.metrics.verifier import Verdict, false_accept_rate, false_reject_rate, auc_roc, auprc
 
 

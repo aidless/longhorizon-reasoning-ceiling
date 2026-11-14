@@ -5,14 +5,13 @@ Run: python3 tests/test_io.py
 
 from __future__ import annotations
 
-import json
 import sys
 import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lhr_tools.io.jsonl import read_jsonl, write_jsonl, iter_jsonl, write_json
+from lhr_tools.io.jsonl import read_jsonl, write_jsonl, iter_jsonl
 from lhr_tools.io.schema import validate_rows
 from lhr_tools.io.generate import generate, generate_realistic
 

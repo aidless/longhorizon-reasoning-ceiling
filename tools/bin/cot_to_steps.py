@@ -9,7 +9,7 @@ is_correct：链路验证粒度——用该轨迹最终 boxed 答案 vs 该步�
   （官方答案不可得时用模型自身 boxed 做自洽基准；换官方答案后重跑即可。）
 """
 from __future__ import annotations
-import json, re, sys, os
+import json, re, sys
 
 def split_steps(cot: str) -> list[str]:
     paras = [p.strip() for p in re.split(r'\n\n+', cot) if p.strip()]
